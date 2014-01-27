@@ -134,14 +134,9 @@ STDMETHODIMP
 CShellExtension::GetCommandString(
 	UINT_PTR idCmd, UINT uFlags, UINT* pwReserved, LPSTR pszName, UINT cchMax)
 {
-	//USES_CONVERSION;
-
 	// Check idCmd, it must be 0 since we have only one menu item.
 	if (0 != idCmd)
 		return E_INVALIDARG;
-
-
-
 
 	// If Explorer is asking for a help string, copy our string into the
 	// supplied buffer.
@@ -151,27 +146,7 @@ CShellExtension::GetCommandString(
 
 		if (uFlags & GCS_UNICODE)
 		{
-#ifndef UNICODE
-			DWORD len;
-			// Get the length (in wide chars) of the UNICODE buffer we'll need to
-			// convert MyString to UNICODE.
-			len = MultiByteToWideChar(CP_ACP, 0, szText, -1, 0, 0);
-
-			BSTR  strptr;
-
-			strptr = SysAllocStringLen(0, len);
-
-			// Convert MyString to UNICODE in the buffer allocated by SysAllocStr
-			MultiByteToWideChar(CP_ACP, 0, szText, -1, strptr, len);
-
-			// We need to cast pszName to a Unicode string, and then use the
-			// Unicode string copy API.
-			lstrcpynW((LPWSTR)pszName, (LPWSTR)(strptr), cchMax);
-
-			SysFreeString(strptr);
-#else
 			_tcscpy_s((_TCHAR *)pszName, cchMax, szText);
-#endif
 		}
 		else
 		{
