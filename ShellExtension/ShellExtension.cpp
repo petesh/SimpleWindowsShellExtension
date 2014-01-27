@@ -3,22 +3,26 @@
 
 #include "stdafx.h"
 #include "ShellExtension.h"
-#include "Utility.h"
 #include <stdio.h>
 
-// This is the constructor of a class that has been exported.
+extern UINT g_dllRefCnt;
+
+#pragma region CShellExHouseKeeping
 // see ShellExtension.h for the class definition
 CShellExtension::CShellExtension()
 {
 	m_refCnt = 1;
+	InterlockedIncrement(&g_dllRefCnt);
 }
 
 CShellExtension::~CShellExtension()
 {
-
+	InterlockedDecrement(&g_dllRefCnt);
 }
+#pragma endregion CShellExHouseKeeping
 
-// IUnknown
+
+#pragma region IUnknown
 
 STDMETHODIMP
 CShellExtension::QueryInterface(REFIID riid, LPVOID *ppObj)
@@ -55,7 +59,9 @@ CShellExtension::Release()
 	return newRef;
 }
 
-// IShellExtInit
+#pragma endregion IUnknown
+
+#pragma region IShellExtInit
 
 STDMETHODIMP
 CShellExtension::Initialize(
@@ -105,7 +111,9 @@ CShellExtension::Initialize(
 	return hr;
 }
 
-// IContextMenu
+#pragma endregion IShellExtInit
+
+#pragma region IContextMenu
 
 STDMETHODIMP
 CShellExtension::QueryContextMenu(
@@ -207,3 +215,5 @@ CShellExtension::InvokeCommand(LPCMINVOKECOMMANDINFO pCmdInfo)
 		break;
 	}
 }
+
+#pragma endregion IContextMenu

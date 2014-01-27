@@ -1,12 +1,11 @@
 // dllmain.cpp : Defines the entry point for the DLL application.
 #include "stdafx.h"
 #include "ClassFactory.h"
-#include "Utility.h"
 #include <VersionHelpers.h>
 #include <objbase.h>
 
-HINSTANCE g_hInst;
-UINT      g_dllRefCnt;
+static HINSTANCE g_hInst;
+UINT g_dllRefCnt;
 
 #pragma data_seg(".text")
 #define INITGUID
@@ -15,9 +14,10 @@ UINT      g_dllRefCnt;
 #include "comguid.h"
 #pragma data_seg()
 
-#define EXPORT __declspec(dllexport)
+#define SHELL_EXT_NAME (TEXT("UserShellExtSizeLimit"))
+#define SHELL_EXT_NAME_PERIOD (TEXT("UserShellExtSizeLimit."))
 
-EXPORT BOOL APIENTRY
+BOOL APIENTRY
 DllMain( HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
 {
 	switch (ul_reason_for_call)
@@ -79,7 +79,7 @@ DllRegisterServer(void)
 	if (pwsz)
 	{
 		LPMALLOC pMalloc = 0;
-		WideCharToLocal(szCLSID, pwsz, ARRAYSIZE(szCLSID));
+		_tcscpy_s(szCLSID, ARRAYSIZE(szCLSID), pwsz);
 		CoGetMalloc(1, &pMalloc);
 		if (pMalloc)
 		{
@@ -93,8 +93,6 @@ DllRegisterServer(void)
 		HKEY_CLASSES_ROOT, TEXT("CLSID\\%s"), TEXT("InfoTip"), SHELL_EXT_NAME_PERIOD,
 		HKEY_CLASSES_ROOT, TEXT("CLSID\\%s\\InprocServer32"), NULL, TEXT("%s"),
 		HKEY_CLASSES_ROOT, TEXT("CLSID\\%s\\InprocServer32"), TEXT("ThreadingModel"), TEXT("Apartment"),
-		HKEY_CLASSES_ROOT, TEXT("CLSID\\%s\\DefaultIcon"), NULL, TEXT("%s,0"),
-		HKEY_CLASSES_ROOT, TEXT("*\\ShellEx\\ContextMenuHandler\\%s"), NULL, TEXT("%s"),
 		NULL, NULL, NULL, NULL };
 
 	for (i = 0; ClsIdEntries[i].hRootKey; i++)
@@ -185,12 +183,9 @@ DllUnregisterServer(VOID)
 {
 	OutputDebugString(TEXT("Unregistering server"));
 	INT i;
-	//HKEY hKey;
 	LRESULT lResult;
-	//DWORD dwDisp;
 	TCHAR szSubKey[MAX_PATH];
 	TCHAR szCLSID[MAX_PATH];
-	TCHAR szModule[MAX_PATH];
 	LPWSTR pwsz;
 
 	// get the CLSID in string form
@@ -198,7 +193,7 @@ DllUnregisterServer(VOID)
 
 	if (pwsz)
 	{
-		WideCharToLocal(szCLSID, pwsz, ARRAYSIZE(szCLSID));
+		_tcscpy_s(szCLSID, ARRAYSIZE(szCLSID), pwsz);
 		LPMALLOC pMalloc;
 		CoGetMalloc(1, &pMalloc);
 		if (pMalloc)
@@ -208,14 +203,10 @@ DllUnregisterServer(VOID)
 		}
 	}
 
-	// get this DLL's path and file name
-	GetModuleFileName(g_hInst, szModule, ARRAYSIZE(szModule));
-
 	// CLSID entries
 	REGSTRUCT ClsidEntries[] = {
-		HKEY_CLASSES_ROOT, TEXT("CLSID\\%s\\DefaultIcon"), NULL, TEXT("%s,0"),
-		HKEY_CLASSES_ROOT, TEXT("CLSID\\%s\\InprocServer32"), NULL, TEXT("%s"),
-		HKEY_CLASSES_ROOT, TEXT("CLSID\\%s"), NULL, SHELL_EXT_NAME,
+		HKEY_CLASSES_ROOT, TEXT("CLSID\\%s\\InprocServer32"), NULL, NULL,
+		HKEY_CLASSES_ROOT, TEXT("CLSID\\%s"), NULL, NULL,
 		NULL, NULL, NULL, NULL };
 
 	for (i = 0; ClsidEntries[i].hRootKey; i++)
@@ -225,7 +216,7 @@ DllUnregisterServer(VOID)
 		lResult = RegDeleteKey(ClsidEntries[i].hRootKey, szSubKey);
 	}
 
-	// Context Menu
+	// Delete the Context Menu & approved key
 	lstrcpy(szSubKey, TEXT("*\\ShellEx\\ContextMenuHandlers\\UserShellExtSizeLimit"));
 	lResult = RegDeleteKey(HKEY_CLASSES_ROOT, szSubKey);
 
@@ -235,8 +226,5 @@ DllUnregisterServer(VOID)
 		RegDeleteValue(hTmpKey, szCLSID);
 		RegCloseKey(hTmpKey);
 	}
-	//lResult = RegDeleteKey(HKEY_LOCAL_MACHINE, szSubKey);
-
-	// Delete the approved key entry
 	return S_OK;
 }
